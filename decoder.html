@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+    <title>PixSafe - Decoder</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(130deg, #1e1e2f, #29294d);
+            color: #eaeaea;
+            font-family: 'Roboto Mono', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        canvas {
+            margin: 1rem 0;
+            border: 2px dashed #5555aa;
+            border-radius: 5px;
+            background: #1e1e2f;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin: 1rem 0;
+            border: 2px dashed #5555aa;
+            border-radius: 5px;
+            background: #1e1e2f;
+
+        }
+
+        h1 {
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+            text-shadow: 0 0 10px #8b86f2, 0 0 20px #726fe2;
+        }
+
+        input[type="file"] {
+            margin-top: 0.5rem;
+            padding: 0.3rem;
+            border: 1px solid #5555aa;
+            background: #1e1e2f;
+            color: #eaeaea;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type="file"]::file-selector-button {
+            background: #29294d;
+            color: #eaeaea;
+            border: 1px solid #5555aa;
+            border-radius: 3px;
+            padding: 0.2rem 0.4rem;
+            cursor: pointer;
+        }
+
+        .input1 {
+            width: 150px;
+            border: 1px solid #585757;
+            border-radius: 4px;
+            font-size: 20px;
+            padding: 4px;
+            margin-top: -9px;
+        }
+
+        button {
+            background: #29294d;
+            color: #eaeaea;
+            border: 1px solid #5555aa;
+            padding: 0.5rem 1rem;
+            margin: 0.5rem;
+            border-radius: 4px;
+            font-family: 'Roboto Mono', monospace;
+            cursor: pointer;
+            transition: background 0.3s, border 0.3s;
+        }
+
+        button:hover {
+            background: #35355c;
+            border: 1px solid #8b86f2;
+        }
+
+        button:disabled {
+            background: #1e1e2f;
+            color: #777788;
+            border: 1px solid #444466;
+            cursor: not-allowed;
+        }
+
+        .aa {
+            color: #9696fc;
+            text-decoration: none;
+            margin-top: 20px;
+            display: inline-block;
+            margin-left: 200px;
+
+        }
+
+        .aaa {
+            color: #9696fc;
+            text-decoration: none;
+            margin-top: 10px;
+            margin-left: 185px;
+
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>PixSafe Decoder</h1>
+        <input type="file" id="imageInput" />
+        <input type="password" id="password" class="input1" placeholder="Enter password" />
+        <button id="decodeImage">Decode Image</button>
+        <a id="downloadFile" class="aaa" hidden>Download Decoded File</a>
+        <a class="aa" href="./index.html">Back to Main Menu</a>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById("imageInput");
+        const passwordInput = document.getElementById("password");
+        const decodeImageBtn = document.getElementById("decodeImage");
+        const downloadFileLink = document.getElementById("downloadFile");
+
+        function decryptData(data, password) {
+            const passwordBytes = new TextEncoder().encode(password);
+            const decrypted = new Uint8Array(data.length);
+            for (let i = 0; i < data.length; i++) {
+                decrypted[i] = data[i] ^ passwordBytes[i % passwordBytes.length];
+            }
+            return decrypted;
+        }
+
+        decodeImageBtn.addEventListener("click", () => {
+            const file = imageInput.files[0];
+            const password = passwordInput.value;
+
+            if (!file) {
+                alert("Please select an image file!");
+                return;
+            }
+            if (!password) {
+                alert("Please enter a password!");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                const img = new Image();
+                img.src = reader.result;
+
+                img.onload = () => {
+                    const canvas = document.createElement("canvas");
+                    const ctx = canvas.getContext("2d");
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    const imageData = ctx.getImageData(0, 0, img.width, img.height).data;
+
+                    // Extract combined data
+                    const combinedData = [];
+                    for (let i = 0; i < imageData.length; i += 4) {
+                        combinedData.push(imageData[i]); // R channel
+                    }
+
+                    // Separate metadata and encrypted data
+                    let separatorIndex = combinedData.indexOf(0);
+                    const metadataBytes = combinedData.slice(0, separatorIndex);
+                    const encryptedData = combinedData.slice(separatorIndex + 1);
+
+                    const metadata = new TextDecoder().decode(new Uint8Array(metadataBytes));
+                    let fileExtension = "bin";
+                    try {
+                        fileExtension = JSON.parse(metadata).extension;
+                    } catch (e) {
+                        alert("Error parsing metadata.");
+                        return;
+                    }
+
+                    const decryptedData = decryptData(new Uint8Array(encryptedData), password);
+                    const blob = new Blob([decryptedData]);
+
+                    const decodedUrl = URL.createObjectURL(blob);
+                    downloadFileLink.href = decodedUrl;
+                    downloadFileLink.download = `decoded-file.${fileExtension}`;
+                    downloadFileLink.hidden = false;
+                    downloadFileLink.textContent = "Download Decoded File";
+                };
+            };
+
+            reader.readAsDataURL(file);
+        });
+    </script>
+</body>
+
+</html>

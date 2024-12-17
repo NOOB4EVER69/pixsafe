@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+  <title>PixSafe - Welcome</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(130deg, #000000, #000000);
+      color: #eaeaea;
+      font-family: 'Roboto Mono', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    h1 {
+      color: #ffffff;
+      margin-bottom: 0.5rem;
+      font-size: 2rem;
+      text-shadow: 0 0 10px #8b86f2, 0 0 20px #726fe2;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 600px;
+    }
+
+
+    p {
+      color: #b5b5d3;
+      margin: 0.5rem 0;
+      font-size: 1rem;
+    }
+
+
+
+    button {
+      background: #29294d;
+      color: #eaeaea;
+      border: 1px solid #5555aa;
+      padding: 0.5rem 1rem;
+      margin: 0.5rem;
+      border-radius: 4px;
+      font-family: 'Roboto Mono', monospace;
+      cursor: pointer;
+      transition: background 0.3s, border 0.3s;
+    }
+
+    button:hover {
+      background: #35355c;
+      border: 1px solid #8b86f2;
+    }
+
+    button:disabled {
+      background: #1e1e2f;
+      color: #777788;
+      border: 1px solid #444466;
+      cursor: not-allowed;
+    }
+
+    a {
+      color: #4CAF50;
+      text-decoration: none;
+      margin-top: 20px;
+      display: inline-block;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Welcome to PixSafe</h1>
+    <p>Secure your files by converting them into encrypted images or decode them back. Choose an option below to get
+      started.</p>
+    <div class="button-container">
+      <button onclick="window.location.href='./encoder.html'">Go to Encoder</button>
+      <button onclick="window.location.href='./decoder.html'">Go to Decoder</button>
+      <button onclick="window.location.href='./about.html'">About PixSafe</button>
+    </div>
+  </div>
+</body>
+
+</html>

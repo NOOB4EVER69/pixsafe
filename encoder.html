@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+    <title>PixSafe - Encoder</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(130deg, #1e1e2f, #29294d);
+            color: #eaeaea;
+            font-family: 'Roboto Mono', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        canvas {
+            margin: 1rem 0;
+            border: 2px dashed #5555aa;
+            border-radius: 5px;
+            background: #1e1e2f;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin: 1rem 0;
+            border: 2px dashed #5555aa;
+            border-radius: 5px;
+            background: #1e1e2f;
+
+        }
+
+        h1 {
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+            text-shadow: 0 0 10px #8b86f2, 0 0 20px #726fe2;
+        }
+
+        input[type="file"] {
+            margin-top: 0.5rem;
+            padding: 0.3rem;
+            border: 1px solid #5555aa;
+            background: #1e1e2f;
+            color: #eaeaea;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type="file"]::file-selector-button {
+            background: #29294d;
+            color: #eaeaea;
+            border: 1px solid #5555aa;
+            border-radius: 3px;
+            padding: 0.2rem 0.4rem;
+            cursor: pointer;
+        }
+
+        .input1 {
+            width: 150px;
+            border: 1px solid #585757;
+            border-radius: 4px;
+            font-size: 20px;
+            padding: 4px;
+            margin-top: -9px;
+        }
+
+        button {
+            background: #29294d;
+            color: #eaeaea;
+            border: 1px solid #5555aa;
+            padding: 0.5rem 1rem;
+            margin: 0.5rem;
+            border-radius: 4px;
+            font-family: 'Roboto Mono', monospace;
+            cursor: pointer;
+            transition: background 0.3s, border 0.3s;
+        }
+
+        button:hover {
+            background: #35355c;
+            border: 1px solid #8b86f2;
+        }
+
+        button:disabled {
+            background: #1e1e2f;
+            color: #777788;
+            border: 1px solid #444466;
+            cursor: not-allowed;
+        }
+
+        a {
+            color: #9696fc;
+            text-decoration: none;
+            margin-top: 20px;
+            display: inline-block;
+            margin-left: 20px;
+
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>PixSafe Encoder</h1>
+        <input type="file" id="fileInput" />
+        <input type="password" id="password" class="input1" placeholder="Enter password" />
+        <canvas id="binaryCanvas" hidden></canvas>
+        <button id="convertToImage">Convert to Image</button>
+        <a href="./index.html">Back to Main Menu</a>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById("fileInput");
+        const convertToImageBtn = document.getElementById("convertToImage");
+        const binaryCanvas = document.getElementById("binaryCanvas");
+        const passwordInput = document.getElementById("password");
+
+        function encryptData(data, password) {
+            const passwordBytes = new TextEncoder().encode(password);
+            const encrypted = new Uint8Array(data.length);
+            for (let i = 0; i < data.length; i++) {
+                encrypted[i] = data[i] ^ passwordBytes[i % passwordBytes.length];
+            }
+            return encrypted;
+        }
+
+        convertToImageBtn.addEventListener("click", () => {
+            const file = fileInput.files[0];
+            const password = passwordInput.value;
+
+            if (!file) {
+                alert("Please select a file!");
+                return;
+            }
+            if (!password) {
+                alert("Please enter a password!");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                const arrayBuffer = new Uint8Array(reader.result);
+                const encryptedData = encryptData(arrayBuffer, password);
+                const metadata = JSON.stringify({ extension: file.name.split('.').pop() });
+                const metadataBytes = new TextEncoder().encode(metadata);
+
+                // Combine metadata and encrypted data
+                const combinedData = new Uint8Array(metadataBytes.length + 1 + encryptedData.length);
+                combinedData.set(metadataBytes, 0);
+                combinedData[metadataBytes.length] = 0; // Separator
+                combinedData.set(encryptedData, metadataBytes.length + 1);
+
+                const canvas = binaryCanvas;
+                const ctx = canvas.getContext("2d");
+                const width = Math.ceil(Math.sqrt(combinedData.length));
+                const height = width;
+
+                canvas.width = width;
+                canvas.height = height;
+
+                const imageData = ctx.createImageData(width, height);
+                for (let i = 0; i < combinedData.length; i++) {
+                    const value = combinedData[i];
+                    imageData.data[i * 4] = value; // R
+                    imageData.data[i * 4 + 1] = value; // G
+                    imageData.data[i * 4 + 2] = value; // B
+                    imageData.data[i * 4 + 3] = 255;   // A
+                }
+                ctx.putImageData(imageData, 0, 0);
+
+                const link = document.createElement("a");
+                link.download = "binary-image.png";
+                link.href = canvas.toDataURL();
+                link.click();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+
+    </script>
+</body>
+
+</html>
